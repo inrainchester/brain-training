@@ -1,786 +1,766 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>全能脑力训练营</title>
-    <!-- 核心引擎：React + Babel + Tailwind -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap');
-        body { 
-            font-family: 'Noto Sans SC', sans-serif; 
-            background-color: #f3f4f6;
-            -webkit-tap-highlight-color: transparent; /* 移除点击高亮 */
-        }
-        .touch-none { touch-action: none; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
+import React, { useState, useEffect, useRef } from 'react';
 
-        /* 交互动画定义 */
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        @keyframes shake { 
-            0%, 100% { transform: translateX(0); } 
-            25% { transform: translateX(-5px); } 
-            75% { transform: translateX(5px); } 
-        }
-        .animate-shake { animation: shake 0.3s ease-in-out; }
-    </style>
-</head>
-<body>
-    <div id="root"></div>
+// --- 图标组件 ---
+const Icons = {
+    Back: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>,
+    Eye: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+    Brain: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>,
+    Zap: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+    Ear: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"/><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 0 4 0v-1"/></svg>,
+    PenTool: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>,
+    Split: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.87l-4.243-4.242a2 2 0 0 1-.585-1.414V3"/><path d="m20 22-5-5"/><path d="m15 22 5-5"/></svg>,
+    BookOpen: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+};
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+// --- 通用 UI 组件 ---
+const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false, size = 'md' }) => {
+    const sizeStyle = size === 'sm' ? "px-3 py-1.5 text-sm" : "px-6 py-3 text-base";
+    const baseStyle = `rounded-xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2 select-none shadow-sm ${sizeStyle}`;
+    const variants = {
+        primary: "bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300",
+        secondary: "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 disabled:bg-gray-100",
+        danger: "bg-red-50 text-red-600 border border-red-100 hover:bg-red-100"
+    };
+    return (
+        <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
+            {children}
+        </button>
+    );
+};
 
-        // --- SVG 图标库 ---
-        const Icons = {
-            Eye: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
-            Brain: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>,
-            Zap: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
-            Ear: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 8.5a6.5 6.5 0 1 1 13 0c0 6-6 6-6 10a3.5 3.5 0 1 1-7 0"/><path d="M15 8.5a2.5 2.5 0 0 0-5 0v1a2 2 0 1 0 4 0v-1"/></svg>,
-            PenTool: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>,
-            Split: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 3h5v5"/><path d="M8 3H3v5"/><path d="M12 22v-8.3a4 4 0 0 0-1.172-2.87l-4.243-4.242a2 2 0 0 1-.585-1.414V3"/><path d="m20 22-5-5"/><path d="m15 22 5-5"/></svg>,
-            BookOpen: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
-            ArrowLeft: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>,
-            RotateCcw: () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-        };
-
-        // --- 基础UI组件 ---
-        const Button = ({ children, onClick, variant = 'primary', className = '', disabled = false }) => {
-            const baseStyle = "px-6 py-3 rounded-xl font-bold transition-all transform active:scale-95 shadow-sm flex items-center justify-center gap-2 select-none";
-            const variants = {
-                primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200 disabled:bg-blue-300",
-                secondary: "bg-white text-gray-700 border-2 border-gray-200 hover:bg-gray-50 disabled:bg-gray-100",
-            };
-            return (
-                <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
-                    {children}
+// --- 统一的游戏布局容器 (解决导航和高度问题) ---
+const GameLayout = ({ title, icon: Icon, onBack, children, headerRight }) => (
+    <div className="flex flex-col h-full bg-gray-50">
+        {/* 顶部常驻导航栏 */}
+        <div className="bg-white px-4 py-3 shadow-sm flex items-center justify-between shrink-0 z-10 sticky top-0">
+            <div className="flex items-center gap-3">
+                <button 
+                    onClick={onBack} 
+                    className="p-2 -ml-2 rounded-full hover:bg-gray-100 active:bg-gray-200 transition-colors"
+                >
+                    <Icons.Back />
                 </button>
-            );
-        };
+                <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    {Icon && <Icon />} {title}
+                </h2>
+            </div>
+            <div>{headerRight}</div>
+        </div>
 
-        const Card = ({ children, className = '' }) => (
-            <div className={`bg-white rounded-2xl shadow-lg p-6 ${className}`}>
+        {/* 滚动内容区 */}
+        <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
+            <div className="max-w-md mx-auto h-full flex flex-col">
                 {children}
             </div>
-        );
+        </div>
+    </div>
+);
 
-        // --- 功能模块1: 舒尔特方格 ---
-        const SchulteGame = ({ onBack }) => {
-            const [grid, setGrid] = useState([]);
-            const [nextNum, setNextNum] = useState(1);
-            const [startTime, setStartTime] = useState(null);
-            const [time, setTime] = useState(0);
-            const [gameState, setGameState] = useState('intro');
+// --- 模块1: 舒尔特方格 ---
+const SchulteGame = ({ onBack }) => {
+    const [grid, setGrid] = useState([]);
+    const [nextNum, setNextNum] = useState(1);
+    const [startTime, setStartTime] = useState(null);
+    const [time, setTime] = useState(0);
+    const [gameState, setGameState] = useState('intro');
 
-            const initGame = () => {
-                const nums = Array.from({ length: 25 }, (_, i) => i + 1);
-                // Fisher-Yates 洗牌算法
-                for (let i = nums.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [nums[i], nums[j]] = [nums[j], nums[i]];
-                }
-                setGrid(nums);
-                setNextNum(1);
-                setStartTime(Date.now());
-                setTime(0);
-                setGameState('playing');
-            };
+    const initGame = () => {
+        const nums = Array.from({ length: 25 }, (_, i) => i + 1);
+        for (let i = nums.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [nums[i], nums[j]] = [nums[j], nums[i]];
+        }
+        setGrid(nums);
+        setNextNum(1);
+        setStartTime(Date.now());
+        setTime(0);
+        setGameState('playing');
+    };
 
-            useEffect(() => {
-                let interval;
-                if (gameState === 'playing') {
-                    interval = setInterval(() => {
-                        setTime(((Date.now() - startTime) / 1000).toFixed(2));
-                    }, 50);
-                }
-                return () => clearInterval(interval);
-            }, [gameState, startTime]);
+    useEffect(() => {
+        let interval;
+        if (gameState === 'playing') {
+            interval = setInterval(() => {
+                setTime(((Date.now() - startTime) / 1000).toFixed(2));
+            }, 50);
+        }
+        return () => clearInterval(interval);
+    }, [gameState, startTime]);
 
-            const handleTap = (num) => {
-                if (num === nextNum) {
-                    if (num === 25) {
-                        setGameState('finished');
-                    } else {
-                        setNextNum(prev => prev + 1);
-                    }
-                }
-            };
+    const handleTap = (num) => {
+        if (num === nextNum) {
+            if (num === 25) { setGameState('finished'); } 
+            else { setNextNum(prev => prev + 1); }
+        }
+    };
 
-            return (
-                <div className="flex flex-col h-full">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
-                            <Icons.Eye /> 舒尔特表
-                        </h2>
-                        <span className="text-xl font-mono font-bold text-blue-600">{time}s</span>
+    return (
+        <GameLayout title="视觉搜索" icon={Icons.Eye} onBack={onBack} headerRight={<span className="font-mono font-bold text-blue-600">{time}s</span>}>
+            {gameState === 'intro' && (
+                <div className="flex-1 flex flex-col justify-center items-center text-center">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm mb-8 w-full">
+                        <p className="text-lg text-gray-600 mb-6">按 1-25 顺序快速点击</p>
+                        <Button onClick={initGame} className="w-full">开始计时</Button>
                     </div>
-
-                    {gameState === 'intro' && (
-                        <Card className="flex-1 flex flex-col items-center justify-center text-center">
-                            <p className="mb-8 text-lg text-gray-600">按顺序尽可能快地点击数字 1 到 25。</p>
-                            <Button onClick={initGame}>开始计时</Button>
-                        </Card>
-                    )}
-
-                    {gameState === 'playing' && (
-                        <div className="flex-1 flex flex-col justify-center">
-                            <div className="grid grid-cols-5 gap-2 md:gap-4 aspect-square max-w-md mx-auto w-full">
-                                {grid.map((num) => (
-                                    <button
-                                        key={num}
-                                        onClick={(e) => { e.preventDefault(); handleTap(num); }}
-                                        className={`
-                                            rounded-lg md:rounded-xl text-xl md:text-3xl font-bold flex items-center justify-center shadow-sm transition-all touch-manipulation select-none
-                                            ${num < nextNum ? 'bg-green-100 text-green-300' : 'bg-white text-gray-800 active:bg-gray-100'}
-                                        `}
-                                    >
-                                        {num}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {gameState === 'finished' && (
-                        <Card className="flex-1 flex flex-col items-center justify-center text-center">
-                            <div className="text-6xl mb-4">🏆</div>
-                            <h3 className="text-2xl font-bold mb-2">完成!</h3>
-                            <p className="text-gray-500 mb-8">成绩: <span className="text-blue-600 font-bold text-xl">{time}秒</span></p>
-                            <div className="flex gap-4">
-                                <Button onClick={initGame} variant="secondary"><Icons.RotateCcw /> 重来</Button>
-                                <Button onClick={onBack}>退出</Button>
-                            </div>
-                        </Card>
-                    )}
                 </div>
-            );
-        };
+            )}
 
-        // --- 功能模块2: Stroop 干扰测试 ---
-        const StroopGame = ({ onBack }) => {
-            const colors = [
-                { name: '红', code: 'text-red-500', value: 'red' },
-                { name: '绿', code: 'text-green-500', value: 'green' },
-                { name: '蓝', code: 'text-blue-500', value: 'blue' },
-                { name: '黄', code: 'text-yellow-500', value: 'yellow' }
-            ];
-            
-            const [currentWord, setCurrentWord] = useState({});
-            const [score, setScore] = useState(0);
-            const [timeLeft, setTimeLeft] = useState(30);
-            const [isActive, setIsActive] = useState(false);
-            const [feedback, setFeedback] = useState(null);
-
-            const nextRound = () => {
-                const randomText = colors[Math.floor(Math.random() * colors.length)];
-                let randomColor = colors[Math.floor(Math.random() * colors.length)];
-                setCurrentWord({ text: randomText.name, colorClass: randomColor.code, colorValue: randomColor.value });
-            };
-
-            const startGame = () => {
-                setScore(0);
-                setTimeLeft(30);
-                setIsActive(true);
-                nextRound();
-            };
-
-            useEffect(() => {
-                let timer;
-                if (isActive && timeLeft > 0) {
-                    timer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
-                } else if (timeLeft === 0) {
-                    setIsActive(false);
-                }
-                return () => clearTimeout(timer);
-            }, [isActive, timeLeft]);
-
-            const handleChoice = (colorValue) => {
-                if (colorValue === currentWord.colorValue) {
-                    setScore(prev => prev + 1);
-                    setFeedback('correct');
-                } else {
-                    setFeedback('wrong');
-                }
-                setTimeout(() => setFeedback(null), 200);
-                nextRound();
-            };
-
-            return (
-                <div className="flex flex-col h-full max-w-md mx-auto">
-                    <div className="flex justify-between items-center mb-6">
-                         <h2 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
-                            <Icons.Zap /> Stroop测试
-                        </h2>
-                        <div className="text-right">
-                            <div className="text-sm text-gray-500">得分: {score}</div>
-                            <div className="font-mono font-bold text-blue-600">{timeLeft}s</div>
-                        </div>
+            {gameState === 'playing' && (
+                <div className="flex-1 flex flex-col justify-center">
+                    <div className="grid grid-cols-5 gap-2 aspect-square w-full">
+                        {grid.map((num) => (
+                            <button
+                                key={num}
+                                onTouchStart={(e) => { e.preventDefault(); handleTap(num); }}
+                                onClick={() => handleTap(num)}
+                                className={`
+                                    rounded-lg text-xl font-bold flex items-center justify-center shadow-sm transition-all select-none
+                                    ${num < nextNum ? 'bg-green-100 text-green-300' : 'bg-white text-gray-800 active:scale-95 active:bg-gray-100'}
+                                `}
+                            >
+                                {num}
+                            </button>
+                        ))}
                     </div>
-
-                    {!isActive && timeLeft === 30 && (
-                         <Card className="flex-1 flex flex-col items-center justify-center text-center">
-                            <p className="mb-8 text-lg text-gray-600">判断文字的<span className="font-bold text-red-500">颜色</span>，而非内容。</p>
-                            <Button onClick={startGame}>开始</Button>
-                        </Card>
-                    )}
-
-                    {isActive && (
-                        <div className="flex-1 flex flex-col items-center justify-center">
-                            <div className={`text-8xl font-black mb-12 transition-all select-none ${currentWord.colorClass} ${feedback === 'wrong' ? 'animate-shake' : ''}`}>
-                                {currentWord.text}
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4 w-full">
-                                <Button onClick={() => handleChoice('red')} className="bg-red-100 hover:bg-red-200 !text-red-600 border-none h-20 text-xl">红色</Button>
-                                <Button onClick={() => handleChoice('green')} className="bg-green-100 hover:bg-green-200 !text-green-600 border-none h-20 text-xl">绿色</Button>
-                                <Button onClick={() => handleChoice('blue')} className="bg-blue-100 hover:bg-blue-200 !text-blue-600 border-none h-20 text-xl">蓝色</Button>
-                                <Button onClick={() => handleChoice('yellow')} className="bg-yellow-100 hover:bg-yellow-200 !text-yellow-600 border-none h-20 text-xl">黄色</Button>
-                            </div>
-                        </div>
-                    )}
-
-                    {!isActive && timeLeft === 0 && (
-                        <Card className="flex-1 flex flex-col items-center justify-center text-center">
-                             <h3 className="text-2xl font-bold mb-2">时间到!</h3>
-                            <p className="text-gray-500 mb-8">得分: <span className="text-blue-600 font-bold text-3xl">{score}</span></p>
-                            <div className="flex gap-4">
-                                <Button onClick={startGame} variant="secondary">重来</Button>
-                                <Button onClick={onBack}>退出</Button>
-                            </div>
-                        </Card>
-                    )}
                 </div>
-            );
-        };
+            )}
 
-        // --- 功能模块3: 序列工作记忆 ---
-        const MemoryGame = ({ onBack }) => {
-            const items = ['🍎', '🍌', '🍇', '🚗', '🐶', '🐱', '⚽', '⏰', '🎸', '🍦'];
-            const [sequence, setSequence] = useState([]);
-            const [userSequence, setUserSequence] = useState([]);
-            const [level, setLevel] = useState(3);
-            const [phase, setPhase] = useState('intro');
-
-            const startLevel = () => {
-                const newSeq = [];
-                for(let i=0; i<level; i++) {
-                    newSeq.push(items[Math.floor(Math.random() * items.length)]);
-                }
-                setSequence(newSeq);
-                setUserSequence([]);
-                setPhase('showing');
-            };
-
-            useEffect(() => {
-                if (phase === 'showing') {
-                    const timer = setTimeout(() => {
-                        setPhase('recall');
-                    }, 1000 * Math.max(2, level * 0.8));
-                    return () => clearTimeout(timer);
-                }
-            }, [phase, level]);
-
-            const handleItemClick = (item) => {
-                const newSeq = [...userSequence, item];
-                setUserSequence(newSeq);
-                if (newSeq.length === sequence.length) {
-                    checkResult(newSeq);
-                }
-            };
-
-            const checkResult = (finalSeq) => {
-                const isCorrect = finalSeq.every((val, index) => val === sequence[index]);
-                if (isCorrect) {
-                    setTimeout(() => {
-                        alert('正确！进入下一关');
-                        setLevel(prev => prev + 1);
-                        startLevel();
-                    }, 200);
-                } else {
-                    setPhase('result');
-                }
-            };
-
-            return (
-                <div className="flex flex-col h-full max-w-md mx-auto">
-                    <div className="flex justify-between items-center mb-6">
-                         <h2 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2">
-                            <Icons.Brain /> 序列记忆
-                        </h2>
-                        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-bold">Level {level-2}</span>
+            {gameState === 'finished' && (
+                <div className="flex-1 flex flex-col justify-center items-center text-center">
+                    <div className="bg-white p-8 rounded-2xl shadow-sm w-full">
+                        <div className="text-6xl mb-4">🏆</div>
+                        <h3 className="text-2xl font-bold mb-2">完成!</h3>
+                        <p className="text-gray-500 mb-8">成绩: <span className="text-blue-600 font-bold text-xl">{time}秒</span></p>
+                        <Button onClick={initGame} className="w-full mb-3">再来一次</Button>
                     </div>
+                </div>
+            )}
+        </GameLayout>
+    );
+};
 
-                    {phase === 'intro' && (
-                        <Card className="flex-1 flex flex-col items-center justify-center text-center">
-                            <p className="mb-8 text-lg text-gray-600">记住物品出现的<span className="font-bold">顺序</span>。</p>
-                            <Button onClick={startLevel}>开始</Button>
-                        </Card>
-                    )}
+// --- 模块2: Stroop 测试 ---
+const StroopGame = ({ onBack }) => {
+    const colors = [
+        { name: '红', code: 'text-red-500', value: 'red' },
+        { name: '绿', code: 'text-green-500', value: 'green' },
+        { name: '蓝', code: 'text-blue-500', value: 'blue' },
+        { name: '黄', code: 'text-yellow-500', value: 'yellow' }
+    ];
+    
+    const [currentWord, setCurrentWord] = useState({});
+    const [score, setScore] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(30);
+    const [isActive, setIsActive] = useState(false);
+    const [feedback, setFeedback] = useState(null);
 
-                    {phase === 'showing' && (
-                         <div className="flex-1 flex flex-col items-center justify-center">
-                             <div className="text-gray-500 mb-4 animate-pulse">记忆时间...</div>
-                             <div className="flex flex-wrap gap-4 justify-center">
-                                 {sequence.map((item, idx) => (
-                                     <div key={idx} className="w-16 h-16 bg-white rounded-xl shadow-md flex items-center justify-center text-3xl animate-[popIn_0.3s_ease-out]" style={{animationDelay: `${idx*0.2}s`}}>
-                                        {item}
-                                     </div>
-                                 ))}
+    const nextRound = () => {
+        const randomText = colors[Math.floor(Math.random() * colors.length)];
+        let randomColor = colors[Math.floor(Math.random() * colors.length)];
+        setCurrentWord({ text: randomText.name, colorClass: randomColor.code, colorValue: randomColor.value });
+    };
+
+    const startGame = () => {
+        setScore(0);
+        setTimeLeft(30);
+        setIsActive(true);
+        nextRound();
+    };
+
+    useEffect(() => {
+        let timer;
+        if (isActive && timeLeft > 0) {
+            timer = setTimeout(() => setTimeLeft(prev => prev - 1), 1000);
+        } else if (timeLeft === 0) {
+            setIsActive(false);
+        }
+        return () => clearTimeout(timer);
+    }, [isActive, timeLeft]);
+
+    const handleChoice = (colorValue) => {
+        if (colorValue === currentWord.colorValue) {
+            setScore(prev => prev + 1);
+            setFeedback('correct');
+        } else {
+            setFeedback('wrong');
+        }
+        setTimeout(() => setFeedback(null), 200);
+        nextRound();
+    };
+
+    return (
+        <GameLayout title="Stroop测试" icon={Icons.Zap} onBack={onBack} headerRight={<div className="text-right"><div className="text-xs text-gray-500">得分: {score}</div><div className="font-mono font-bold text-blue-600">{timeLeft}s</div></div>}>
+            {!isActive && timeLeft === 30 && (
+                 <div className="flex-1 flex flex-col justify-center items-center">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm w-full text-center">
+                        <p className="mb-6 text-lg text-gray-600">点击文字的<span className="font-bold text-red-500">颜色</span><br/>不要点击文字内容</p>
+                        <Button onClick={startGame} className="w-full">开始挑战</Button>
+                    </div>
+                </div>
+            )}
+
+            {isActive && (
+                <div className="flex-1 flex flex-col">
+                    <div className="flex-1 flex items-center justify-center">
+                        <div className={`text-8xl font-black transition-all select-none ${currentWord.colorClass} ${feedback === 'wrong' ? 'animate-shake' : ''}`}>
+                            {currentWord.text}
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 pb-4">
+                        <Button onClick={() => handleChoice('red')} className="bg-red-50 text-red-600 border-none h-20 text-xl">红色</Button>
+                        <Button onClick={() => handleChoice('green')} className="bg-green-50 text-green-600 border-none h-20 text-xl">绿色</Button>
+                        <Button onClick={() => handleChoice('blue')} className="bg-blue-50 text-blue-600 border-none h-20 text-xl">蓝色</Button>
+                        <Button onClick={() => handleChoice('yellow')} className="bg-yellow-50 text-yellow-600 border-none h-20 text-xl">黄色</Button>
+                    </div>
+                </div>
+            )}
+
+            {!isActive && timeLeft === 0 && (
+                <div className="flex-1 flex flex-col justify-center items-center">
+                    <div className="bg-white p-8 rounded-2xl shadow-sm w-full text-center">
+                        <h3 className="text-2xl font-bold mb-2">时间到!</h3>
+                        <p className="text-gray-500 mb-8">最终得分: <span className="text-blue-600 font-bold text-3xl">{score}</span></p>
+                        <Button onClick={startGame} className="w-full">再试一次</Button>
+                    </div>
+                </div>
+            )}
+        </GameLayout>
+    );
+};
+
+// --- 模块3: 序列记忆 ---
+const MemoryGame = ({ onBack }) => {
+    const items = ['🍎', '🍌', '🍇', '🚗', '🐶', '🐱', '⚽', '⏰', '🎸', '🍦'];
+    const [sequence, setSequence] = useState([]);
+    const [userSequence, setUserSequence] = useState([]);
+    const [level, setLevel] = useState(3);
+    const [phase, setPhase] = useState('intro');
+
+    const startLevel = () => {
+        const newSeq = [];
+        for(let i=0; i<level; i++) {
+            newSeq.push(items[Math.floor(Math.random() * items.length)]);
+        }
+        setSequence(newSeq);
+        setUserSequence([]);
+        setPhase('showing');
+    };
+
+    useEffect(() => {
+        if (phase === 'showing') {
+            const timer = setTimeout(() => {
+                setPhase('recall');
+            }, 1000 * Math.max(2, level * 0.8));
+            return () => clearTimeout(timer);
+        }
+    }, [phase, level]);
+
+    const handleItemClick = (item) => {
+        const newSeq = [...userSequence, item];
+        setUserSequence(newSeq);
+        if (newSeq.length === sequence.length) {
+            checkResult(newSeq);
+        }
+    };
+
+    const checkResult = (finalSeq) => {
+        const isCorrect = finalSeq.every((val, index) => val === sequence[index]);
+        if (isCorrect) {
+            setTimeout(() => {
+                alert('正确！进入下一关');
+                setLevel(prev => prev + 1);
+                startLevel();
+            }, 200);
+        } else {
+            setPhase('result');
+        }
+    };
+
+    return (
+        <GameLayout title="序列记忆" icon={Icons.Brain} onBack={onBack} headerRight={<span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">Lv.{level-2}</span>}>
+            {phase === 'intro' && (
+                <div className="flex-1 flex flex-col justify-center items-center">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm w-full text-center">
+                        <p className="mb-6 text-lg text-gray-600">记住物品出现的<span className="font-bold">顺序</span></p>
+                        <Button onClick={startLevel} className="w-full">开始 Lv.1</Button>
+                    </div>
+                </div>
+            )}
+
+            {phase === 'showing' && (
+                 <div className="flex-1 flex flex-col items-center justify-center">
+                     <div className="text-gray-500 mb-8 animate-pulse font-bold">请记忆...</div>
+                     <div className="flex flex-wrap gap-4 justify-center">
+                         {sequence.map((item, idx) => (
+                             <div key={idx} className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-gray-100 flex items-center justify-center text-3xl animate-[popIn_0.3s_ease-out]" style={{animationDelay: `${idx*0.2}s`}}>
+                                {item}
                              </div>
-                         </div>
-                    )}
+                         ))}
+                     </div>
+                 </div>
+            )}
 
-                    {phase === 'recall' && (
-                        <div className="flex-1 flex flex-col">
-                            <div className="mb-4 min-h-[4rem] bg-gray-200 rounded-xl p-4 flex gap-2 flex-wrap items-center">
-                                {userSequence.map((item, idx) => (
-                                    <span key={idx} className="text-2xl">{item}</span>
-                                ))}
-                                {userSequence.length === 0 && <span className="text-gray-400 text-sm">点击下方物品...</span>}
-                            </div>
-                            <div className="grid grid-cols-5 gap-2">
-                                {items.map((item) => (
-                                    <button key={item} onClick={() => handleItemClick(item)} className="aspect-square bg-white rounded-lg shadow-sm text-2xl active:bg-gray-100">
-                                        {item}
-                                    </button>
-                                ))}
-                            </div>
-                            <button onClick={() => setUserSequence([])} className="mt-4 text-red-500 text-sm font-medium p-2">重置选择</button>
-                        </div>
-                    )}
-
-                    {phase === 'result' && (
-                         <Card className="flex-1 flex flex-col items-center justify-center text-center">
-                            <div className="text-6xl mb-4">❌</div>
-                            <h3 className="text-2xl font-bold mb-2">记忆错误</h3>
-                            <div className="text-sm text-gray-500 mb-4">
-                                正确: {sequence.join(' ')}
-                            </div>
-                            <Button onClick={() => { setLevel(3); startLevel(); }}>重来</Button>
-                            <Button onClick={onBack} variant="secondary" className="mt-4">退出</Button>
-                        </Card>
-                    )}
+            {phase === 'recall' && (
+                <div className="flex-1 flex flex-col">
+                    <div className="mb-4 bg-white border border-gray-200 rounded-xl p-4 flex gap-2 flex-wrap items-center min-h-[80px]">
+                        {userSequence.map((item, idx) => (
+                            <span key={idx} className="text-2xl animate-[popIn_0.2s_ease-out]">{item}</span>
+                        ))}
+                        {userSequence.length === 0 && <span className="text-gray-400 text-sm">点击下方物品...</span>}
+                    </div>
+                    <div className="grid grid-cols-5 gap-2">
+                        {items.map((item) => (
+                            <button key={item} onClick={() => handleItemClick(item)} className="aspect-square bg-white rounded-xl border border-gray-200 shadow-sm text-2xl active:bg-gray-100 transition-colors">
+                                {item}
+                            </button>
+                        ))}
+                    </div>
+                    <div className="mt-4 text-right">
+                        <button onClick={() => setUserSequence([])} className="text-red-500 text-sm font-medium px-4 py-2">重置选择</button>
+                    </div>
                 </div>
-            );
-        };
+            )}
 
-        // --- 功能模块4: 听觉选择性注意 ---
-        const AuditoryGame = ({ onBack }) => {
-            const [isPlaying, setIsPlaying] = useState(false);
-            const [targetNum, setTargetNum] = useState(null);
-            const [sequence, setSequence] = useState([]);
-            const [userInput, setUserInput] = useState('');
-            const [result, setResult] = useState(null); 
-            const [difficulty, setDifficulty] = useState(1);
-
-            const generateGame = () => {
-                const target = Math.floor(Math.random() * 9) + 1;
-                setTargetNum(target);
-                
-                const length = 15 + (difficulty * 5);
-                const count = 3 + Math.floor(Math.random() * 4);
-                let seq = Array.from({length}, () => Math.floor(Math.random() * 9) + 1);
-                
-                let currentCount = seq.filter(n => n === target).length;
-                while(currentCount !== count) {
-                     seq = Array.from({length}, () => Math.floor(Math.random() * 9) + 1);
-                     currentCount = seq.filter(n => n === target).length;
-                }
-
-                setSequence({ data: seq, answer: count });
-                setResult(null);
-                setUserInput('');
-                playSequence(seq);
-            };
-
-            const playSequence = (seq) => {
-                setIsPlaying(true);
-                if (!window.speechSynthesis) {
-                    alert('您的手机浏览器不支持语音功能，请尝试使用Chrome或Safari');
-                    return;
-                }
-
-                let i = 0;
-                const speakNext = () => {
-                    if (i >= seq.length) {
-                        setIsPlaying(false);
-                        return;
-                    }
-                    const num = seq[i];
-                    const utterance = new SpeechSynthesisUtterance(num.toString());
-                    utterance.rate = 1.0 + (difficulty * 0.2);
-                    utterance.pitch = Math.random() * 0.5 + 0.8; 
-                    utterance.lang = 'zh-CN';
-                    
-                    utterance.onend = () => {
-                        i++;
-                        setTimeout(speakNext, 400 - (difficulty * 30));
-                    };
-                    window.speechSynthesis.speak(utterance);
-                };
-                speakNext();
-            };
-
-            const checkAnswer = () => {
-                if (parseInt(userInput) === sequence.answer) {
-                    setResult('correct');
-                    if(difficulty < 5) setDifficulty(d => d + 1);
-                } else {
-                    setResult('wrong');
-                }
-            };
-
-            return (
-                <div className="flex flex-col h-full max-w-md mx-auto">
-                    <h2 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2 mb-6">
-                        <Icons.Ear /> 听觉专注
-                    </h2>
-
-                    {!targetNum ? (
-                        <Card className="flex-1 flex flex-col items-center justify-center text-center">
-                            <p className="text-gray-600 mb-6">
-                                统计数字 <span className="font-bold text-blue-600 text-lg">X</span> 出现了几次。<br/>
-                                <span className="text-xs text-red-500">请确保手机未静音</span>
-                            </p>
-                            <Button onClick={generateGame}>开始</Button>
-                        </Card>
-                    ) : (
-                        <div className="flex flex-col gap-6 items-center flex-1 justify-center">
-                            <div className="text-center">
-                                <p className="text-gray-500 mb-2">统计该数字出现次数：</p>
-                                <div className="text-6xl font-bold text-blue-600">{targetNum}</div>
-                            </div>
-
-                            {isPlaying ? (
-                                <div className="h-20 flex items-center justify-center">
-                                    <p className="text-gray-400 animate-pulse">正在播放...</p>
-                                </div>
-                            ) : (
-                                <div className="w-full">
-                                    <div className="flex gap-2 mb-4">
-                                        <input 
-                                            type="number" 
-                                            value={userInput} 
-                                            onChange={(e) => setUserInput(e.target.value)}
-                                            className="flex-1 p-3 border-2 border-gray-200 rounded-xl text-center text-xl outline-none focus:border-blue-500"
-                                            placeholder="输入次数"
-                                        />
-                                        <Button onClick={checkAnswer} disabled={!userInput}>确认</Button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {result === 'correct' && (
-                                <div className="w-full bg-green-100 p-4 rounded-xl text-green-700 text-center animate-bounce">
-                                    ✅ 正确！难度已提升
-                                    <button onClick={generateGame} className="block w-full mt-2 underline font-bold">下一题</button>
-                                </div>
-                            )}
-                            {result === 'wrong' && (
-                                <div className="w-full bg-red-100 p-4 rounded-xl text-red-700 text-center">
-                                    ❌ 错误。正确是 {sequence.answer} 次。
-                                    <button onClick={generateGame} className="block w-full mt-2 underline font-bold">再试一次</button>
-                                </div>
-                            )}
-                            <div className="mt-auto">
-                                <Button variant="secondary" onClick={onBack}>退出</Button>
-                            </div>
+            {phase === 'result' && (
+                <div className="flex-1 flex flex-col justify-center items-center">
+                    <div className="bg-white p-8 rounded-2xl shadow-sm w-full text-center">
+                        <div className="text-5xl mb-4">❌</div>
+                        <h3 className="text-xl font-bold mb-2">记忆错误</h3>
+                        <div className="bg-gray-50 p-3 rounded-lg text-sm text-gray-500 mb-6 break-words">
+                            正确: {sequence.join(' ')}
                         </div>
-                    )}
+                        <Button onClick={() => { setLevel(3); startLevel(); }} className="w-full">重头开始</Button>
+                    </div>
                 </div>
-            );
-        };
+            )}
+        </GameLayout>
+    );
+};
 
-        // --- 功能模块5: 双侧肢体镜像协调 ---
-        const MirrorGame = ({ onBack }) => {
-            const canvasRef = useRef(null);
+// --- 模块4: 听觉专注 (增强版) ---
+const AuditoryGame = ({ onBack }) => {
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [targetNum, setTargetNum] = useState(null);
+    const [sequence, setSequence] = useState([]);
+    const [userInput, setUserInput] = useState('');
+    const [result, setResult] = useState(null); 
+    // 播放速度状态，默认1.0
+    const [speechRate, setSpeechRate] = useState(1.0);
+
+    const generateGame = () => {
+        const target = Math.floor(Math.random() * 9) + 1;
+        setTargetNum(target);
+        
+        const length = 15; // 固定长度，主要靠速度调节难度
+        const count = 3 + Math.floor(Math.random() * 4);
+        let seq = Array.from({length}, () => Math.floor(Math.random() * 9) + 1);
+        
+        let currentCount = seq.filter(n => n === target).length;
+        while(currentCount !== count) {
+             seq = Array.from({length}, () => Math.floor(Math.random() * 9) + 1);
+             currentCount = seq.filter(n => n === target).length;
+        }
+
+        setSequence({ data: seq, answer: count });
+        setResult(null);
+        setUserInput('');
+        playSequence(seq);
+    };
+
+    const playSequence = (seq) => {
+        setIsPlaying(true);
+        if (!window.speechSynthesis) {
+            alert('您的浏览器不支持语音功能');
+            return;
+        }
+
+        // 确保取消之前的播放
+        window.speechSynthesis.cancel();
+
+        let i = 0;
+        const speakNext = () => {
+            if (i >= seq.length) {
+                setIsPlaying(false);
+                return;
+            }
+            const num = seq[i];
+            const utterance = new SpeechSynthesisUtterance(num.toString());
+            // 使用用户设置的速度
+            utterance.rate = speechRate; 
+            utterance.lang = 'zh-CN';
             
-            useEffect(() => {
-                const canvas = canvasRef.current;
-                const ctx = canvas.getContext('2d');
-                // Set canvas size to match display size
-                canvas.width = canvas.offsetWidth;
-                canvas.height = canvas.offsetHeight;
-                
-                ctx.beginPath();
-                ctx.moveTo(canvas.width / 2, 0);
-                ctx.lineTo(canvas.width / 2, canvas.height);
-                ctx.strokeStyle = '#cbd5e1';
-                ctx.setLineDash([5, 5]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-            }, []);
-
-            const getPos = (e) => {
-                const canvas = canvasRef.current;
-                const rect = canvas.getBoundingClientRect();
-                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-                return {
-                    x: clientX - rect.left,
-                    y: clientY - rect.top
-                };
+            utterance.onend = () => {
+                i++;
+                // 间隔也随速度变化
+                setTimeout(speakNext, 300 / speechRate);
             };
+            window.speechSynthesis.speak(utterance);
+        };
+        speakNext();
+    };
 
-            const startDraw = (e) => {
-                const { x, y } = getPos(e);
-                const ctx = canvasRef.current.getContext('2d');
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                ctx.lineWidth = 3;
-                ctx.lineCap = 'round';
-                ctx.strokeStyle = '#2563eb';
-            };
+    const checkAnswer = () => {
+        if (parseInt(userInput) === sequence.answer) {
+            setResult('correct');
+        } else {
+            setResult('wrong');
+        }
+    };
 
-            const draw = (e) => {
-                e.preventDefault(); 
-                const { x, y } = getPos(e);
-                const ctx = canvasRef.current.getContext('2d');
-                const width = canvasRef.current.width;
-
-                ctx.lineTo(x, y);
-                ctx.stroke();
-
-                ctx.fillStyle = '#ef4444'; 
-                ctx.fillRect(width - x, y, 3, 3);
-                
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-            };
-
-            const clearCanvas = () => {
-                const canvas = canvasRef.current;
-                const ctx = canvas.getContext('2d');
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                ctx.beginPath();
-                ctx.moveTo(canvas.width / 2, 0);
-                ctx.lineTo(canvas.width / 2, canvas.height);
-                ctx.strokeStyle = '#cbd5e1';
-                ctx.setLineDash([5, 5]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-            };
-
-            return (
-                <div className="flex flex-col h-full overflow-hidden">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                            <Icons.Split /> 镜像画板
-                        </h2>
-                        <div className="flex gap-2">
-                            <button onClick={clearCanvas} className="text-sm bg-gray-200 px-3 py-1 rounded-lg">清空</button>
-                            <button onClick={onBack} className="text-sm bg-gray-200 px-3 py-1 rounded-lg">退出</button>
+    return (
+        <GameLayout title="听觉专注" icon={Icons.Ear} onBack={onBack}>
+            {!targetNum ? (
+                <div className="flex-1 flex flex-col justify-center items-center">
+                     <div className="bg-white p-6 rounded-2xl shadow-sm w-full text-center mb-6">
+                        <p className="text-gray-600 mb-6">
+                            统计数字 <span className="font-bold text-blue-600 text-lg">X</span> 出现次数
+                        </p>
+                        
+                        {/* 速度调节器 */}
+                        <div className="mb-6 bg-gray-50 p-4 rounded-xl">
+                            <div className="flex justify-between text-sm text-gray-500 mb-2">
+                                <span>慢速 (0.5x)</span>
+                                <span className="font-bold text-blue-600">{speechRate}x</span>
+                                <span>极速 (2.0x)</span>
+                            </div>
+                            <input 
+                                type="range" 
+                                min="0.5" 
+                                max="2.0" 
+                                step="0.1" 
+                                value={speechRate}
+                                onChange={(e) => setSpeechRate(parseFloat(e.target.value))}
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                            />
                         </div>
-                    </div>
-                    
-                    <div className="flex-1 bg-white shadow-inner rounded-xl border-2 border-gray-200 overflow-hidden touch-none relative">
-                        <canvas
-                            ref={canvasRef}
-                            className="w-full h-full touch-none"
-                            onTouchStart={startDraw}
-                            onTouchMove={draw}
-                            onMouseDown={startDraw}
-                            onMouseMove={(e) => { if(e.buttons === 1) draw(e); }}
-                        />
-                         <div className="absolute top-2 left-2 text-xs text-blue-500 font-bold opacity-50 pointer-events-none">画笔区</div>
-                         <div className="absolute top-2 right-2 text-xs text-red-500 font-bold opacity-50 pointer-events-none">镜像区</div>
+
+                        <Button onClick={generateGame} className="w-full">开始训练</Button>
                     </div>
                 </div>
-            );
-        };
+            ) : (
+                <div className="flex flex-col h-full">
+                    <div className="flex-1 flex flex-col items-center justify-center">
+                        <div className="text-center mb-8">
+                            <p className="text-gray-500 mb-2">统计目标数字</p>
+                            <div className="text-7xl font-bold text-blue-600">{targetNum}</div>
+                        </div>
 
-        // --- 功能模块6: 规则分类逻辑 ---
-        const ClassifyGame = ({ onBack }) => {
-            const items = [
-                { name: '铅笔', cat: '文具', price: 2 },
-                { name: '笔记本', cat: '文具', price: 15 },
-                { name: '苹果', cat: '食品', price: 5 },
-                { name: '牛肉', cat: '食品', price: 50 },
-                { name: '牙膏', cat: '日用', price: 12 },
-                { name: '毛巾', cat: '日用', price: 8 },
-            ];
-
-            const [currentItem, setCurrentItem] = useState(null);
-            const [rule, setRule] = useState(0); 
-            const [score, setScore] = useState(0);
-            const [feedback, setFeedback] = useState('');
-
-            const rules = [
-                { title: '分类：食品 vs 其他', check: (item) => item.cat === '食品', left: '食品', right: '其他' },
-                { title: '价格：大于10元 vs 小于10元', check: (item) => item.price > 10, left: '高价(>10)', right: '低价(<=10)' }
-            ];
-
-            const nextItem = () => {
-                const item = items[Math.floor(Math.random() * items.length)];
-                setCurrentItem(item);
-                if(Math.random() > 0.7) setRule(r => r === 0 ? 1 : 0);
-            };
-
-            useEffect(() => {
-                nextItem();
-            }, []);
-
-            const handleSort = (dir) => {
-                const currentRule = rules[rule];
-                const isLeftCorrect = currentRule.check(currentItem);
-                
-                let correct = false;
-                if (dir === 'left' && isLeftCorrect) correct = true;
-                if (dir === 'right' && !isLeftCorrect) correct = true;
-
-                if (correct) {
-                    setScore(s => s + 1);
-                    setFeedback('✨');
-                    setTimeout(() => setFeedback(''), 300);
-                    nextItem();
-                } else {
-                    setScore(s => Math.max(0, s - 1));
-                    setFeedback('❌');
-                    setTimeout(() => setFeedback(''), 300);
-                }
-            };
-
-            return (
-                <div className="flex flex-col h-full max-w-md mx-auto">
-                    <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-xl font-bold flex items-center gap-2"><Icons.Split /> 规则分类</h2>
-                        <span className="font-mono text-xl text-blue-600">{score}分</span>
-                    </div>
-
-                    <div className="bg-blue-50 p-4 rounded-xl text-center mb-8">
-                        <span className="text-sm text-gray-500 uppercase tracking-wider">当前规则</span>
-                        <h3 className="text-lg font-bold text-blue-800">{rules[rule].title}</h3>
-                    </div>
-
-                    <div className="flex-1 flex flex-col items-center justify-center relative">
-                        {feedback && <div className="absolute top-0 text-4xl animate-ping">{feedback}</div>}
-                        
-                        {currentItem && (
-                            <Card className="w-48 h-48 flex flex-col items-center justify-center mb-12 transform transition-all shadow-xl">
-                                <div className="text-3xl font-bold mb-2">{currentItem.name}</div>
-                                <div className="text-sm text-gray-400">¥ {currentItem.price}</div>
-                            </Card>
+                        {isPlaying ? (
+                            <div className="h-20 flex flex-col items-center justify-center">
+                                <div className="flex gap-1 h-8 items-end mb-2">
+                                     <div className="w-1.5 bg-blue-500 animate-[bounce_1s_infinite] h-4"></div>
+                                     <div className="w-1.5 bg-blue-500 animate-[bounce_1.2s_infinite] h-6"></div>
+                                     <div className="w-1.5 bg-blue-500 animate-[bounce_0.8s_infinite] h-3"></div>
+                                </div>
+                                <p className="text-sm text-gray-400">正在播放 ({speechRate}x)...</p>
+                            </div>
+                        ) : (
+                            <div className="w-full max-w-xs animate-[fadeIn_0.3s_ease-out]">
+                                <div className="flex gap-2 mb-4">
+                                    <input 
+                                        type="number" 
+                                        value={userInput} 
+                                        onChange={(e) => setUserInput(e.target.value)}
+                                        className="flex-1 p-3 border-2 border-gray-200 rounded-xl text-center text-xl outline-none focus:border-blue-500 focus:bg-white transition-colors bg-white"
+                                        placeholder="输入次数"
+                                    />
+                                    <Button onClick={checkAnswer} disabled={!userInput}>确认</Button>
+                                </div>
+                            </div>
                         )}
 
-                        <div className="flex w-full gap-4">
-                            <Button onClick={() => handleSort('left')} className="flex-1 h-16 text-lg" variant="secondary">
-                                👈 {rules[rule].left}
-                            </Button>
-                            <Button onClick={() => handleSort('right')} className="flex-1 h-16 text-lg" variant="secondary">
-                                {rules[rule].right} 👉
-                            </Button>
-                        </div>
+                        {result === 'correct' && (
+                            <div className="w-full bg-green-100 p-4 rounded-xl text-green-700 text-center animate-bounce mb-4">
+                                ✅ 正确！
+                                <button onClick={generateGame} className="block w-full mt-2 underline font-bold">下一题</button>
+                            </div>
+                        )}
+                        {result === 'wrong' && (
+                            <div className="w-full bg-red-100 p-4 rounded-xl text-red-700 text-center mb-4">
+                                ❌ 错误。正确是 {sequence.answer} 次。
+                                <button onClick={generateGame} className="block w-full mt-2 underline font-bold">再试一次</button>
+                            </div>
+                        )}
                     </div>
-                    <Button onClick={onBack} variant="secondary" className="mt-8 border-none text-gray-400">退出</Button>
+                    
+                    <div className="py-4">
+                        <Button variant="secondary" onClick={() => {setTargetNum(null); setResult(null);}} className="w-full">调整设置</Button>
+                    </div>
                 </div>
-            );
+            )}
+        </GameLayout>
+    );
+};
+
+// --- 模块5: 镜像画板 ---
+const MirrorGame = ({ onBack }) => {
+    const canvasRef = useRef(null);
+    
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const container = canvas.parentElement;
+        canvas.width = container.offsetWidth;
+        canvas.height = container.offsetHeight;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }, []);
+
+    const getPos = (e) => {
+        const canvas = canvasRef.current;
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: clientX - rect.left,
+            y: clientY - rect.top
         };
+    };
 
-        // --- 功能模块7: 情景联想记忆 ---
-        const StoryGame = ({ onBack }) => {
-            const nouns = ['雨伞', '火车', '苹果', '大象', '手表', '云朵', '吉他', '眼镜', '香蕉', '火箭'];
-            const [words, setWords] = useState([]);
-            const [showWords, setShowWords] = useState(false);
+    const startDraw = (e) => {
+        // 不阻止默认行为，让页面可以滚动，除非在画板区域内
+        const { x, y } = getPos(e);
+        const ctx = canvasRef.current.getContext('2d');
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#2563eb';
+    };
 
-            const generate = () => {
-                const shuffled = [...nouns].sort(() => 0.5 - Math.random());
-                setWords(shuffled.slice(0, 3));
-                setShowWords(true);
-            };
+    const draw = (e) => {
+        e.preventDefault(); // 绘画时阻止滚动
+        const { x, y } = getPos(e);
+        const ctx = canvasRef.current.getContext('2d');
+        const width = canvasRef.current.width;
 
-            return (
-                <div className="flex flex-col h-full max-w-md mx-auto">
-                     <h2 className="text-xl md:text-2xl font-bold text-gray-800 flex items-center gap-2 mb-6">
-                        <Icons.BookOpen /> 情景联想
-                    </h2>
+        ctx.lineTo(x, y);
+        ctx.stroke();
 
-                    {!showWords ? (
-                         <Card className="flex-1 flex flex-col items-center justify-center text-center">
-                            <p className="mb-6 text-gray-600">
-                                生成3个词语，编织一个荒诞故事将它们串联起来。
-                            </p>
-                            <Button onClick={generate}>生成词语</Button>
-                        </Card>
-                    ) : (
-                        <div className="flex-1 flex flex-col items-center">
-                            <div className="grid gap-6 w-full mb-8">
-                                {words.map((w, i) => (
-                                    <div key={i} className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 animate-[slideIn_0.3s_ease-out]" style={{animationDelay: `${i*0.1}s`}}>
-                                        <div className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center font-bold">{i+1}</div>
-                                        <div className="text-2xl font-bold text-gray-800">{w}</div>
-                                    </div>
-                                ))}
-                            </div>
+        ctx.fillStyle = '#ef4444'; 
+        ctx.fillRect(width - x, y, 3, 3);
+        
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+    };
 
-                            <div className="bg-yellow-50 p-4 rounded-lg text-sm text-yellow-800 mb-8">
-                                💡 提示：闭眼想象画面。越夸张、感官越丰富，记忆越深刻。
-                            </div>
+    const clearCanvas = () => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, 0);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    };
 
-                            <div className="flex gap-4 w-full">
-                                <Button onClick={() => setShowWords(false)} variant="secondary" className="flex-1">完成</Button>
-                                <Button onClick={generate} className="flex-1">换一组</Button>
-                            </div>
+    return (
+        <GameLayout title="镜像画板" icon={Icons.Split} onBack={onBack} headerRight={<button onClick={clearCanvas} className="text-sm bg-gray-100 text-gray-600 px-3 py-1 rounded-lg">清空</button>}>
+             <div className="flex-1 bg-white shadow-inner rounded-xl border border-gray-200 overflow-hidden relative touch-none min-h-[400px]">
+                <canvas
+                    ref={canvasRef}
+                    className="w-full h-full block"
+                    onTouchStart={startDraw}
+                    onTouchMove={draw}
+                    onMouseDown={startDraw}
+                    onMouseMove={(e) => { if(e.buttons === 1) draw(e); }}
+                />
+                 <div className="absolute top-2 left-2 text-xs text-blue-500 font-bold opacity-50 pointer-events-none">左脑区</div>
+                 <div className="absolute top-2 right-2 text-xs text-red-500 font-bold opacity-50 pointer-events-none">右脑区</div>
+            </div>
+            <p className="text-center text-xs text-gray-400 mt-2">单指绘画，自动生成镜像</p>
+        </GameLayout>
+    );
+};
+
+// --- 模块6: 规则分类 ---
+const ClassifyGame = ({ onBack }) => {
+    const items = [
+        { name: '铅笔', cat: '文具', price: 2 },
+        { name: '笔记本', cat: '文具', price: 15 },
+        { name: '苹果', cat: '食品', price: 5 },
+        { name: '牛肉', cat: '食品', price: 50 },
+        { name: '牙膏', cat: '日用', price: 12 },
+        { name: '毛巾', cat: '日用', price: 8 },
+    ];
+
+    const [currentItem, setCurrentItem] = useState(null);
+    const [rule, setRule] = useState(0); 
+    const [score, setScore] = useState(0);
+    const [feedback, setFeedback] = useState('');
+
+    const rules = [
+        { title: '分类：食品 vs 其他', check: (item) => item.cat === '食品', left: '食品', right: '其他' },
+        { title: '价格：大于10元 vs 小于10元', check: (item) => item.price > 10, left: '高价(>10)', right: '低价(<=10)' }
+    ];
+
+    const nextItem = () => {
+        const item = items[Math.floor(Math.random() * items.length)];
+        setCurrentItem(item);
+        if(Math.random() > 0.7) setRule(r => r === 0 ? 1 : 0);
+    };
+
+    useEffect(() => {
+        nextItem();
+    }, []);
+
+    const handleSort = (dir) => {
+        const currentRule = rules[rule];
+        const isLeftCorrect = currentRule.check(currentItem);
+        
+        let correct = false;
+        if (dir === 'left' && isLeftCorrect) correct = true;
+        if (dir === 'right' && !isLeftCorrect) correct = true;
+
+        if (correct) {
+            setScore(s => s + 1);
+            setFeedback('✨');
+            setTimeout(() => setFeedback(''), 300);
+            nextItem();
+        } else {
+            setScore(s => Math.max(0, s - 1));
+            setFeedback('❌');
+            setTimeout(() => setFeedback(''), 300);
+        }
+    };
+
+    return (
+        <GameLayout title="规则分类" icon={Icons.Split} onBack={onBack} headerRight={<span className="font-mono text-blue-600 font-bold">{score}分</span>}>
+            <div className="flex-1 flex flex-col items-center justify-between py-4">
+                <div className="bg-blue-50 px-4 py-2 rounded-lg text-center w-full">
+                    <span className="text-xs text-gray-500 uppercase tracking-wider block mb-1">当前规则</span>
+                    <h3 className="text-md font-bold text-blue-800">{rules[rule].title}</h3>
+                </div>
+
+                <div className="relative w-full flex justify-center py-8">
+                    {feedback && <div className="absolute top-0 text-5xl animate-ping z-10">{feedback}</div>}
+                    
+                    {currentItem && (
+                        <div className="w-40 h-40 bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col items-center justify-center transform transition-all">
+                            <div className="text-3xl font-bold mb-2">{currentItem.name}</div>
+                            <div className="text-sm text-gray-400">¥ {currentItem.price}</div>
                         </div>
                     )}
-                    <div className="mt-auto">
-                        <Button onClick={onBack} variant="secondary" className="mt-4 border-none text-gray-400 w-full">退出</Button>
+                </div>
+
+                <div className="flex w-full gap-4">
+                    <Button onClick={() => handleSort('left')} className="flex-1 h-20 text-lg" variant="secondary">
+                        👈 {rules[rule].left}
+                    </Button>
+                    <Button onClick={() => handleSort('right')} className="flex-1 h-20 text-lg" variant="secondary">
+                        {rules[rule].right} 👉
+                    </Button>
+                </div>
+            </div>
+        </GameLayout>
+    );
+};
+
+// --- 模块7: 情景联想 ---
+const StoryGame = ({ onBack }) => {
+    const nouns = ['雨伞', '火车', '苹果', '大象', '手表', '云朵', '吉他', '眼镜', '香蕉', '火箭'];
+    const [words, setWords] = useState([]);
+    const [showWords, setShowWords] = useState(false);
+
+    const generate = () => {
+        const shuffled = [...nouns].sort(() => 0.5 - Math.random());
+        setWords(shuffled.slice(0, 3));
+        setShowWords(true);
+    };
+
+    return (
+         <GameLayout title="情景联想" icon={Icons.BookOpen} onBack={onBack}>
+            {!showWords ? (
+                 <div className="flex-1 flex flex-col justify-center items-center">
+                    <div className="bg-white p-6 rounded-2xl shadow-sm w-full text-center">
+                        <p className="mb-6 text-gray-600">
+                            生成3个词语，编织一个荒诞故事将它们串联起来。
+                        </p>
+                        <Button onClick={generate} className="w-full">生成词语</Button>
                     </div>
                 </div>
-            );
-        };
-
-        // --- 主菜单入口 ---
-        const App = () => {
-            const [currentModule, setCurrentModule] = useState(null);
-
-            const modules = [
-                { id: 'schulte', title: '视觉搜索', desc: '舒尔特表训练', icon: Icons.Eye, color: 'text-blue-500', bg: 'bg-blue-50' },
-                { id: 'stroop', title: 'Stroop测试', desc: '抗干扰注意力', icon: Icons.Zap, color: 'text-yellow-500', bg: 'bg-yellow-50' },
-                { id: 'memory', title: '序列记忆', desc: '工作记忆广度', icon: Icons.Brain, color: 'text-purple-500', bg: 'bg-purple-50' },
-                { id: 'auditory', title: '听觉专注', desc: '选择性注意', icon: Icons.Ear, color: 'text-green-500', bg: 'bg-green-50' },
-                { id: 'mirror', title: '镜像协调', desc: '左右脑协同', icon: Icons.PenTool, color: 'text-pink-500', bg: 'bg-pink-50' },
-                { id: 'classify', title: '逻辑分类', desc: '前额叶规则', icon: Icons.Split, color: 'text-indigo-500', bg: 'bg-indigo-50' },
-                { id: 'story', title: '情景联想', desc: '海马体记忆', icon: Icons.BookOpen, color: 'text-orange-500', bg: 'bg-orange-50' },
-            ];
-
-            const renderModule = () => {
-                switch(currentModule) {
-                    case 'schulte': return <SchulteGame onBack={() => setCurrentModule(null)} />;
-                    case 'stroop': return <StroopGame onBack={() => setCurrentModule(null)} />;
-                    case 'memory': return <MemoryGame onBack={() => setCurrentModule(null)} />;
-                    case 'auditory': return <AuditoryGame onBack={() => setCurrentModule(null)} />;
-                    case 'mirror': return <MirrorGame onBack={() => setCurrentModule(null)} />;
-                    case 'classify': return <ClassifyGame onBack={() => setCurrentModule(null)} />;
-                    case 'story': return <StoryGame onBack={() => setCurrentModule(null)} />;
-                    default: return null;
-                }
-            };
-
-            if (currentModule) {
-                return (
-                    <div className="min-h-screen bg-gray-50 p-4">
-                        <div className="max-w-md mx-auto h-[90vh] bg-white rounded-3xl shadow-xl p-4 overflow-hidden relative flex flex-col">
-                             {renderModule()}
-                        </div>
+            ) : (
+                <div className="flex-1 flex flex-col items-center">
+                    <div className="grid gap-4 w-full mb-6">
+                        {words.map((w, i) => (
+                            <div key={i} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-4 animate-[slideIn_0.3s_ease-out]" style={{animationDelay: `${i*0.1}s`}}>
+                                <div className="bg-blue-100 text-blue-600 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">{i+1}</div>
+                                <div className="text-xl font-bold text-gray-800">{w}</div>
+                            </div>
+                        ))}
                     </div>
-                );
-            }
 
-            return (
-                <div className="min-h-screen bg-gray-100 p-4">
-                    <div className="max-w-md mx-auto">
-                        <header className="mb-8 pt-4">
-                            <h1 className="text-3xl font-bold text-gray-900 mb-2">大脑健身房 🧠</h1>
-                            <p className="text-gray-500">基于神经科学的7项核心训练</p>
+                    <div className="bg-yellow-50 p-4 rounded-xl text-sm text-yellow-800 mb-6 w-full">
+                        💡 提示：闭眼想象画面。越夸张、感官越丰富，记忆越深刻。
+                    </div>
+
+                    <div className="mt-auto w-full flex gap-3">
+                        <Button onClick={() => setShowWords(false)} variant="secondary" className="flex-1">完成</Button>
+                        <Button onClick={generate} className="flex-1">换一组</Button>
+                    </div>
+                </div>
+            )}
+        </GameLayout>
+    );
+};
+
+// --- 主菜单 ---
+export default function App() {
+    const [currentModule, setCurrentModule] = useState(null);
+
+    const modules = [
+        { id: 'schulte', title: '视觉搜索', desc: '舒尔特表训练', icon: Icons.Eye, color: 'text-blue-500', bg: 'bg-blue-50' },
+        { id: 'stroop', title: 'Stroop测试', desc: '抗干扰注意力', icon: Icons.Zap, color: 'text-yellow-500', bg: 'bg-yellow-50' },
+        { id: 'memory', title: '序列记忆', desc: '工作记忆广度', icon: Icons.Brain, color: 'text-purple-500', bg: 'bg-purple-50' },
+        { id: 'auditory', title: '听觉专注', desc: '选择性注意', icon: Icons.Ear, color: 'text-green-500', bg: 'bg-green-50' },
+        { id: 'mirror', title: '镜像协调', desc: '左右脑协同', icon: Icons.PenTool, color: 'text-pink-500', bg: 'bg-pink-50' },
+        { id: 'classify', title: '逻辑分类', desc: '前额叶规则', icon: Icons.Split, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+        { id: 'story', title: '情景联想', desc: '海马体记忆', icon: Icons.BookOpen, color: 'text-orange-500', bg: 'bg-orange-50' },
+    ];
+
+    const renderModule = () => {
+        switch(currentModule) {
+            case 'schulte': return <SchulteGame onBack={() => setCurrentModule(null)} />;
+            case 'stroop': return <StroopGame onBack={() => setCurrentModule(null)} />;
+            case 'memory': return <MemoryGame onBack={() => setCurrentModule(null)} />;
+            case 'auditory': return <AuditoryGame onBack={() => setCurrentModule(null)} />;
+            case 'mirror': return <MirrorGame onBack={() => setCurrentModule(null)} />;
+            case 'classify': return <ClassifyGame onBack={() => setCurrentModule(null)} />;
+            case 'story': return <StoryGame onBack={() => setCurrentModule(null)} />;
+            default: return null;
+        }
+    };
+
+    return (
+        <div className="h-screen w-full overflow-hidden bg-gray-100 font-sans touch-manipulation">
+            <style>{`
+                /* 隐藏滚动条 */
+                .scrollbar-hide::-webkit-scrollbar { display: none; }
+                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+                @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+                .animate-shake { animation: shake 0.3s ease-in-out; }
+            `}</style>
+
+            {currentModule ? (
+                renderModule()
+            ) : (
+                <div className="flex flex-col h-full bg-gray-100">
+                    <div className="flex-1 overflow-y-auto p-4 scrollbar-hide">
+                         <header className="mb-6 pt-2">
+                            <h1 className="text-2xl font-bold text-gray-900 mb-1">大脑健身房 🧠</h1>
+                            <p className="text-sm text-gray-500">PhD 专属口袋训练营</p>
                         </header>
 
                         <div className="grid gap-3 pb-8">
@@ -788,14 +768,14 @@
                                 <button
                                     key={m.id}
                                     onClick={() => setCurrentModule(m.id)}
-                                    className="bg-white p-4 rounded-2xl shadow-sm active:scale-95 transition-transform flex items-center gap-4 text-left"
+                                    className="bg-white p-4 rounded-xl shadow-sm active:scale-95 transition-transform flex items-center gap-4 text-left border border-transparent hover:border-blue-100"
                                 >
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${m.bg} ${m.color}`}>
+                                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${m.bg} ${m.color}`}>
                                         <m.icon />
                                     </div>
                                     <div className="flex-1">
                                         <h3 className="font-bold text-gray-800">{m.title}</h3>
-                                        <p className="text-sm text-gray-500">{m.desc}</p>
+                                        <p className="text-xs text-gray-500">{m.desc}</p>
                                     </div>
                                     <div className="text-gray-300">
                                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
@@ -803,17 +783,12 @@
                                 </button>
                             ))}
                         </div>
-                        
-                        <footer className="text-center text-xs text-gray-400 pb-4">
-                            坚持每日训练，激活前额叶与海马体
-                        </footer>
+                    </div>
+                     <div className="bg-white p-3 text-center text-xs text-gray-400 border-t border-gray-100 shrink-0">
+                        保持每日训练，激活前额叶与海马体
                     </div>
                 </div>
-            );
-        };
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+            )}
+        </div>
+    );
+}
